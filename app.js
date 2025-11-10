@@ -46,7 +46,7 @@ const verifyFirebaseToken = async (req, res, next) => {
 
   try {
     const userInfo = await admin.auth().verifyIdToken(token);
-    console.log(userInfo);
+    req.user = userInfo
     next()
   }
   catch (err) {
@@ -88,7 +88,7 @@ app.post('/users', async (req, res) => {
 
 
 // Get all listings or get specific amount using count query
-app.get('/pets', async (req, res) => {
+app.get('/listings', async (req, res) => {
     try {
         if(!petListingsCollection) return res.status(500).json({ message: "Database not ready yet!" })
 
@@ -142,6 +142,20 @@ const { name, category, price, location, description, image, date, email } = req
   
 })
 
+// Get listings by email
+app.get('/listings/:email', verifyFirebaseToken, async (req, res) => {
+  try {
+    const email = req.params.email;
+    if(email !== req.user.email) {
+      return res.status(401).json({ message: "unauthorized access" })
+    }
+    const listings = await petListingsCollection.find({ email }).toArray();
+    return res.status(200).json(listings)
+  }
+  catch (err) {
+    return res.status(500).json({ message: "Server error" })
+  }
+})
 
 async function startDB() {
   try {
