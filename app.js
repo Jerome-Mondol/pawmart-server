@@ -4,7 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv').config();
 const port = process.env.PORT || 5000;
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const DB_USER = process.env.MONGO_USER;
 const DB_PASSWORD = process.env.MONGO_PASSWORD;
 const uri = `mongodb+srv://${DB_USER}:${DB_PASSWORD}@crud.jtcvf7t.mongodb.net/?appName=crud`;
@@ -154,6 +154,39 @@ app.get('/listings/:email', verifyFirebaseToken, async (req, res) => {
   }
   catch (err) {
     return res.status(500).json({ message: "Server error" })
+  }
+})
+
+// Delete Listing
+app.delete('/listings/:id',   verifyFirebaseToken, async (req, res) => {
+  try {
+    const id = req.params.id;
+    const email = req.user.email;
+
+    if(!ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "Invalid listing id" })
+    }
+
+    const listing = await petListingsCollection.findOne({ _id: new ObjectId(id) });
+
+    if(!listing) {
+      return res.status(404).json({ message: "Listing not found" });
+    }
+
+    if(listing.email !== email) {
+    return res.status(403).json({ message: "Forbidden: not your listing" });
+    }
+
+    const result = await petListingsCollection.deleteOne({ _id: new ObjectId(id) });
+    if (result.deletedCount === 1) {
+      return res.status(200).json({ message: "Listing deleted successfully" });
+    } else {
+      return res.status(500).json({ message: "Failed to delete listing" });
+    }
+  }
+  catch (err) {
+    console.error("Delete error:", err);
+    return res.status(500).json({ message: "Server error" });
   }
 })
 
