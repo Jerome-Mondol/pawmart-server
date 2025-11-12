@@ -33,42 +33,7 @@ admin.initializeApp({
 });
 
 
-// Enhanced CORS configuration
-// Replace your current cors setup with this
-app.use(cors({
-  origin: [
-    'http://localhost:5173',       // local dev
-    'http://localhost:3000',       // CRA dev
-    'https://pawmart-84610.web.app', // Firebase hosting prod
-    'https://pawmart-84610.web.app/' // Sometimes with slash
-  ],
-  credentials: true,
-  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization','X-Requested-With']
-}));
-
-// Optional: also keep manual headers middleware for extra safety
-app.use((req, res, next) => {
-  const allowedOrigins = [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://pawmart-84610.web.app'
-  ];
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.header('Access-Control-Allow-Origin', origin);
-  }
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  next();
-});
-
-// Handle preflight requests
-app.options('*', (req, res) => {
-  res.sendStatus(200);
-});
-
+app.use(cors());
 app.use(express.json());
 
 const verifyFirebaseToken = async (req, res, next) => {
