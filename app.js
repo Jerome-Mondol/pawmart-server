@@ -24,14 +24,51 @@ let db;
 
 var admin = require("firebase-admin");
 
-var serviceAccount = require("./pawmart-84610-firebase-adminsdk-fbsvc-4e78528a83.json");
+// index.js
+const decoded = Buffer.from(process.env.FIREBASE_SERVICE_KEY, "base64").toString("utf8");
+const serviceAccount = JSON.parse(decoded);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 
 
-app.use(cors());
+// Enhanced CORS configuration
+// Replace your current cors setup with this
+app.use(cors({
+  origin: [
+    'http://localhost:5173',       // local dev
+    'http://localhost:3000',       // CRA dev
+    'https://pawmart-84610.web.app', // Firebase hosting prod
+    'https://pawmart-84610.web.app/' // Sometimes with slash
+  ],
+  credentials: true,
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization','X-Requested-With']
+}));
+
+// Optional: also keep manual headers middleware for extra safety
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://pawmart-84610.web.app'
+  ];
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+  }
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
+
+// Handle preflight requests
+app.options('*', (req, res) => {
+  res.sendStatus(200);
+});
+
 app.use(express.json());
 
 const verifyFirebaseToken = async (req, res, next) => {
@@ -60,6 +97,24 @@ app.get('/', (req, res) => {
   res.send("smartPaw server is running");
 })
 
+// Get all listings or get specific amount using count query
+app.get('/listings', async (req, res) => {
+  try {
+    if (!petListingsCollection) return res.status(500).json({ message: "Database not ready yet!" })
+
+    let query = petListingsCollection.find({}).sort({ date: -1 });
+    const count = req.query.count ? parseInt(req.query.count) : null;
+
+    if (count) query = query.limit(count);
+    const listings = await query.toArray();
+
+    res.status(200).json(listings)
+  }
+  catch (err) {
+    res.status(500).json({ message: "Failed to fetch pet listings" })
+  }
+})
+
 
 
 // Create user in database
@@ -81,29 +136,12 @@ app.post('/users', async (req, res) => {
     res.status(201).json({ message: 'User saved successfully', user: newUser });
   }
   catch (err) {
-    console.log(err);
     res.status(500).json({ message: 'Server error' });
   }
 })
 
 
-// Get all listings or get specific amount using count query
-app.get('/listings', async (req, res) => {
-  try {
-    if (!petListingsCollection) return res.status(500).json({ message: "Database not ready yet!" })
 
-    let query = petListingsCollection.find({}).sort({ date: -1 });
-    const count = req.query.count ? parseInt(req.query.count) : null;
-
-    if (count) query = query.limit(count);
-    const listings = await query.toArray();
-
-    res.status(200).json(listings)
-  }
-  catch (err) {
-    res.status(500).json({ message: "Failed to fetch pet listings" })
-  }
-})
 
 // Get single listing by ID
 app.get("/listings/:id", async (req, res) => {
@@ -170,7 +208,6 @@ app.post('/add-listing', verifyFirebaseToken, async (req, res) => {
     }
   }
   catch (err) {
-    console.log(err);
     res.status(500).json({ message: "Server error" })
   }
 
