@@ -122,6 +122,23 @@ app.get("/listings/:id", async (req, res) => {
   }
 });
 
+app.get("/category-filtered-product/:category", async (req, res) => {
+  try {
+    const category = req.params.category.toLowerCase();
+    if (!category)
+      return res.status(400).json({ message: "Category required" });
+
+    const products = await petListingsCollection
+      .find({ category: { $regex: `^${category}$`, $options: "i" } })
+      .toArray();
+
+    res.status(200).json(products);
+  } catch (err) {
+    console.error("Error fetching filtered products:", err);
+    res.status(500).json({ message: "Failed to fetch products" });
+  }
+})
+
 // Add new listing
 app.post('/add-listing', verifyFirebaseToken, async (req, res) => {
   try {
