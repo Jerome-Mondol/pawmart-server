@@ -4,6 +4,7 @@ const cors = require('cors');
 const dotenv = require('dotenv').config();
 const port = process.env.PORT || 5000;
 
+// MongoDB setup
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const DB_USER = process.env.MONGO_USER;
 const DB_PASSWORD = process.env.MONGO_PASSWORD;
@@ -24,7 +25,7 @@ let db;
 
 var admin = require("firebase-admin");
 
-// index.js
+// Firebase Admin SDK initialization
 const decoded = Buffer.from(process.env.FIREBASE_SERVICE_KEY, "base64").toString("utf8");
 const serviceAccount = JSON.parse(decoded);
 
@@ -36,6 +37,7 @@ admin.initializeApp({
 app.use(cors());
 app.use(express.json());
 
+// Middleware to verify Firebase token
 const verifyFirebaseToken = async (req, res, next) => {
   if (!req.headers.authorization) {
     return res.status(401).send({ message: "unauthorized access" })
@@ -62,7 +64,7 @@ app.get('/', (req, res) => {
   res.send("smartPaw server is running");
 })
 
-// Get all listings or get specific amount using count query
+// Route to get all listings or limited count
 app.get('/listings', async (req, res) => {
   try {
     if (!petListingsCollection) return res.status(500).json({ message: "Database not ready yet!" })
@@ -82,7 +84,7 @@ app.get('/listings', async (req, res) => {
 
 
 
-// Create user in database
+// Route to create a new user
 app.post('/users', async (req, res) => {
   try {
     const { displayName, photoURL, email } = req.body;
@@ -107,8 +109,7 @@ app.post('/users', async (req, res) => {
 
 
 
-
-// Get single listing by ID
+// Route to get a single listing by ID
 app.get("/listings/:id", async (req, res) => {
   try {
     const id = req.params.id;
@@ -125,6 +126,7 @@ app.get("/listings/:id", async (req, res) => {
   }
 });
 
+// Route to get products filtered by category
 app.get("/category-filtered-product/:category", async (req, res) => {
   try {
     const category = req.params.category.toLowerCase();
@@ -142,7 +144,7 @@ app.get("/category-filtered-product/:category", async (req, res) => {
   }
 })
 
-// Add new listing
+// Route to add a new listing
 app.post('/add-listing', verifyFirebaseToken, async (req, res) => {
   try {
     const { name, category, price, location, description, image, date, email } = req.body;
@@ -178,7 +180,7 @@ app.post('/add-listing', verifyFirebaseToken, async (req, res) => {
 
 })
 
-// Get listings by email
+// Route to get listings by user email
 app.get('/user/listings/:email', verifyFirebaseToken, async (req, res) => {
   try {
     const email = req.params.email;
@@ -193,7 +195,7 @@ app.get('/user/listings/:email', verifyFirebaseToken, async (req, res) => {
   }
 })
 
-// Delete Listing
+// Route to delete a listing
 app.delete('/listings/:id', verifyFirebaseToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -226,7 +228,7 @@ app.delete('/listings/:id', verifyFirebaseToken, async (req, res) => {
   }
 })
 
-// Update Listing
+// Route to update a listing
 app.put("/listings/:id", verifyFirebaseToken, async (req, res) => {
   try {
     const id = req.params.id;
@@ -265,7 +267,7 @@ app.put("/listings/:id", verifyFirebaseToken, async (req, res) => {
 // Orders collection
 let ordersCollection;
 
-// Create new order
+// Route to create a new order
 app.post("/orders", verifyFirebaseToken, async (req, res) => {
   try {
     const {
@@ -316,7 +318,7 @@ app.post("/orders", verifyFirebaseToken, async (req, res) => {
   }
 });
 
-// Get all orders for the loggedin user
+// Route to get all orders for the logged-in user
 app.get("/orders", verifyFirebaseToken, async (req, res) => {
   try {
     const email = req.user.email
@@ -330,6 +332,7 @@ app.get("/orders", verifyFirebaseToken, async (req, res) => {
 
 
 
+// Function to start the database connection and server
 async function startDB() {
   try {
     await client.connect();
