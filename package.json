@@ -5,8 +5,8 @@
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node app.js",
-    "dev": "nodemon app.js"
+    "build": "node init && node app.js",
+    "dev": "node init && nodemon app.js"
   },
   "keywords": [],
   "author": "",
